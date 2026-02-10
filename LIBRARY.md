@@ -34,7 +34,7 @@ AGLE é uma biblioteca C profissional para:
 - **Dependencias**: OpenSSL 3.0+
 - **Seguranca**: Conforme NIST SP 800-22
 - **Performance**: Otimizado com `-O3`
-- **Licenca**: ASL-1.0 (study-only)
+- **Licenca**: Apache-2.0
 
 ---
 
@@ -633,7 +633,7 @@ Benchmark típico (Intel i7, Linux):
 
 ## Licenca
 
-RPL-1.0 (Reciprocal Public License 1.0)
+Apache-2.0
 
 ---
 
