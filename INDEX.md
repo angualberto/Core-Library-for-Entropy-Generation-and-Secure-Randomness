@@ -330,7 +330,7 @@ Antes de usar em produção:
 
 **Projeto:** AGLE - Alpha-Gauss-Logistic Entropy Generator
 **Versão:** 2.0.0
-**Licença:** RPL-1.0 (Reciprocal Public License 1.0)
+**Licenca:** Apache-2.0
 **Status:** ✅ Production Ready
 **Data:** 9 de Fevereiro de 2026
 **Compilador:** GCC/Clang C99+

@@ -288,7 +288,7 @@ Dúvidas? Consulte:
 
 ## Licenca
 
-**RPL-1.0** (Reciprocal Public License 1.0)
+**Apache-2.0**
 
 ---
 

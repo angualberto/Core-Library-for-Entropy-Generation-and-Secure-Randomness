@@ -183,7 +183,7 @@ Segurança:
   ✓ SHAKE256 (SHA-3 family)
   ✓ /dev/urandom entropy source
   ✓ Secure memory zeroization
-  ✓ RPL-1.0 Licensed
+  ✓ Apache-2.0 Licensed
 
 Performance:
   • Init: ~5ms
@@ -297,5 +297,5 @@ TROUBLESHOOTING:
 
 Criado: 9 de Fevereiro de 2026
 AGLE Library v2.0.0
-License: RPL-1.0
+License: Apache-2.0
 Status: ✅ Production Ready

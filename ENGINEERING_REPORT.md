@@ -37,9 +37,9 @@ Both build systems are production-ready.
 
 #### Content Improvements
 - Removed all emoji for ASCII compatibility
-- Standardized terminology (study-only, entropy, modes)
+- Standardized terminology (license, entropy, modes)
 - Added Threat Model and Conceptual Modes sections
-- Clear license clarification (ASL-1.0)
+- Clear license clarification (Apache-2.0)
 
 ### 4. Code Quality
 
@@ -56,7 +56,7 @@ Both build systems are production-ready.
 ### 5. License and Compliance
 
 #### License Change
-- Replaced RPL-1.0 with ASL-1.0 (study-only)
+- Replaced RPL-1.0 with Apache-2.0
 - Added explicit commercial use liability
 - Consistent across all documentation
 
@@ -114,7 +114,7 @@ Build system:
 - LIBRARY.md - Enhanced with threat model, modes
 - INSTALL.md - New (installation guide)
 - CHANGELOG.md - New (version history)
-- LICENSE - Updated (ASL-1.0)
+- LICENSE - Updated (Apache-2.0)
 
 ## Build Verification
 
@@ -168,4 +168,4 @@ Ready for:
 ---
 
 **AGLE Library is now professionally structured and documented.**
-**Version 2.0.0 - Study-only License (ASL-1.0)**
+**Version 2.0.0 - Apache-2.0**

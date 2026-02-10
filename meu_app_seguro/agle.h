@@ -3,7 +3,7 @@
  * Cryptographic Library for RNG, Password Generation, and Secure Communication
  * 
  * Author: AGLE Project
- * License: RPL-1.0
+ * License: Apache-2.0
  */
 
 #ifndef AGLE_H
