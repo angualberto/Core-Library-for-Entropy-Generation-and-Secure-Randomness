@@ -1,0 +1,409 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║       🔒 ANÁLISE DE SEGURANÇA - VULNERABILIDADES CRÍTICAS       ║
+║                                                                  ║
+║              Sistema de Autenticação AGLE                       ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Data: 9 de fevereiro de 2026
+Analista: GitHub Copilot Security Analysis
+Severidade: CRÍTICA a BAIXA
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 VULNERABILIDADES CRÍTICAS (Severidade: CRÍTICA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ❌ EXPOSIÇÃO DE HASHES NO LOG (Timing Attack + Info Leak)
+   
+   Localização: servidor_auth.c, linha 95-105
+   
+   Problema:
+   ```c
+   printf("🔍 Debug Login: %s\n", user->username);
+   printf("   Hash armazenado: ");
+   for(int i=0; i<8; i++) printf("%02x", user->password_hash[i]);
+   printf("...\n");
+   printf("   Hash calculado:  ");
+   for(int i=0; i<8; i++) printf("%02x", hash[i]);
+   printf("...\n");
+   ```
+   
+   Impacto:
+   • Atacante pode ver hashes parciais nos logs
+   • Facilita ataques de rainbow table
+   • Permite inferir senhas por comparação
+   
+   Severidade: CRÍTICA 🔴
+   
+   Solução:
+   • REMOVER completamente os prints de debug
+   • Logs devem mostrar apenas: sucesso/falha, username, timestamp
+   • NUNCA expor hashes, salts ou senhas
+
+
+2. ❌ EXPOSIÇÃO DE SALT NO LOG (Information Disclosure)
+   
+   Localização: servidor_auth.c, linha 81-82
+   
+   Problema:
+   ```c
+   printf("✅ Usuário registrado: %s (salt: ", username);
+   for(int i=0; i<16; i++) printf("%02x", user->salt[i]);
+   ```
+   
+   Impacto:
+   • Salt é exposto publicamente no terminal
+   • Atacante pode usar salt para pré-computar hashes
+   • Anula o propósito do salt
+   
+   Severidade: CRÍTICA 🔴
+   
+   Solução:
+   • REMOVER exposição do salt
+   • Salt deve ser mantido secreto no servidor
+
+
+3. ❌ AUSÊNCIA DE RATE LIMITING (Brute Force)
+   
+   Localização: servidor_auth.c (ausente)
+   
+   Problema:
+   • Não há limite de tentativas de login
+   • Não há delay entre tentativas
+   • Não há bloqueio temporário após falhas
+   
+   Impacto:
+   • Atacante pode fazer brute force ilimitado
+   • Pode testar milhares de senhas por segundo
+   • Sistema vulnerável a ataques automatizados
+   
+   Severidade: CRÍTICA 🔴
+   
+   Solução:
+   ```c
+   // Adicionar campos ao User:
+   int failed_attempts;
+   time_t locked_until;
+   
+   // No login:
+   if (time(NULL) < user->locked_until) {
+       return false; // Conta bloqueada
+   }
+   
+   if (!senha_valida) {
+       user->failed_attempts++;
+       if (user->failed_attempts >= 3) {
+           user->locked_until = time(NULL) + 300; // 5 minutos
+       }
+       return false;
+   }
+   
+   user->failed_attempts = 0; // Reset ao sucesso
+   ```
+
+
+4. ❌ DADOS EM MEMÓRIA NÃO CRIPTOGRAFADOS
+   
+   Localização: servidor_auth.c, linhas 40-44
+   
+   Problema:
+   ```c
+   static User users[MAX_USERS];
+   static Session sessions[MAX_SESSIONS];
+   ```
+   
+   Impacto:
+   • Senhas em texto claro temporariamente na memória
+   • Hashes e salts acessíveis via memory dump
+   • Tokens de sessão expostos
+   
+   Severidade: ALTA 🟠
+   
+   Solução:
+   • Usar mlock() para prevenir swap
+   • Zeroizar senhas após uso: memset_s()
+   • Criptografar dados em memória
+
+
+5. ❌ TIMING ATTACK EM memcmp()
+   
+   Localização: servidor_auth.c, linha 103
+   
+   Problema:
+   ```c
+   bool resultado = (memcmp(hash, user->password_hash, 32) == 0);
+   ```
+   
+   Impacto:
+   • memcmp() retorna na primeira diferença (não constant-time)
+   • Atacante pode medir tempo de resposta
+   • Permite inferir bytes corretos do hash
+   
+   Severidade: ALTA 🟠
+   
+   Solução:
+   ```c
+   // Usar comparação constant-time:
+   bool constant_time_compare(const uint8_t *a, const uint8_t *b, size_t len) {
+       volatile uint8_t result = 0;
+       for (size_t i = 0; i < len; i++) {
+           result |= a[i] ^ b[i];
+       }
+       return result == 0;
+   }
+   ```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🟠 VULNERABILIDADES ALTAS (Severidade: ALTA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. ❌ AUSÊNCIA DE HTTPS/TLS
+   
+   Problema:
+   • Servidor usa HTTP puro (porta 8080)
+   • Senhas trafegam em texto claro pela rede
+   • Tokens podem ser interceptados
+   
+   Impacto:
+   • Man-in-the-Middle (MITM) attack
+   • Sniffing de credenciais em rede local
+   • Session hijacking
+   
+   Severidade: ALTA 🟠
+   
+   Solução:
+   • Implementar TLS/SSL
+   • Usar certificados HTTPS
+   • Forçar HTTPS apenas (HSTS)
+
+
+7. ❌ BUFFER OVERFLOW POTENCIAL
+   
+   Localização: servidor_auth.c, linha 72-73
+   
+   Problema:
+   ```c
+   uint8_t combined[256];
+   memcpy(combined, password, pass_len);
+   ```
+   
+   Impacto:
+   • Se pass_len > 240, overflow ao adicionar salt
+   • Corrupção de memória
+   • Possível execução de código arbitrário
+   
+   Severidade: ALTA 🟠
+   
+   Solução:
+   ```c
+   if (pass_len > 240) {
+       return false; // Senha muito longa
+   }
+   ```
+
+
+8. ❌ SESSÕES NÃO LIMPAS
+   
+   Problema:
+   • Sessions[] nunca é limpa
+   • Sessões expiradas permanecem na memória
+   • MAX_SESSIONS pode ser atingido
+   
+   Impacto:
+   • Denial of Service (DoS)
+   • Vazamento de memória
+   • Sistema para após 100 sessões
+   
+   Severidade: ALTA 🟠
+   
+   Solução:
+   ```c
+   void limpar_sessoes_expiradas() {
+       time_t now = time(NULL);
+       for (int i = 0; i < session_count; i++) {
+           if (sessions[i].expires_at < now) {
+               // Mover última sessão para esta posição
+               sessions[i] = sessions[session_count - 1];
+               session_count--;
+               i--; // Reprocessar esta posição
+           }
+       }
+   }
+   ```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🟡 VULNERABILIDADES MÉDIAS (Severidade: MÉDIA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9. ⚠️  AUSÊNCIA DE VALIDAÇÃO DE SENHA FORTE
+   
+   Problema:
+   • Não há requisitos mínimos de senha
+   • Aceita senhas como "123" ou "a"
+   
+   Impacto:
+   • Usuários podem criar senhas fracas
+   • Facilita brute force
+   
+   Severidade: MÉDIA 🟡
+   
+   Solução:
+   • Mínimo 12 caracteres
+   • Pelo menos 1 maiúscula, 1 minúscula, 1 número, 1 símbolo
+   • Verificar contra lista de senhas comuns
+
+
+10. ⚠️  AUSÊNCIA DE 2FA (Two-Factor Authentication)
+    
+    Problema:
+    • Sistema usa apenas senha única
+    • Não há segundo fator
+    
+    Impacto:
+    • Senha comprometida = acesso total
+    • Sem proteção adicional
+    
+    Severidade: MÉDIA 🟡
+    
+    Solução:
+    • Implementar TOTP (Time-based OTP)
+    • SMS ou email com código
+    • Authenticator app
+
+
+11. ⚠️  CORS ABERTO PARA TODOS
+    
+    Localização: servidor_auth.c, cabeçalhos HTTP
+    
+    Problema:
+    ```c
+    Access-Control-Allow-Origin: *
+    ```
+    
+    Impacto:
+    • Qualquer site pode fazer requisições
+    • CSRF (Cross-Site Request Forgery)
+    
+    Severidade: MÉDIA 🟡
+    
+    Solução:
+    • Especificar origem permitida
+    • Implementar tokens CSRF
+
+
+12. ⚠️  AUSÊNCIA DE LOGGING DE AUDITORIA
+    
+    Problema:
+    • Não há logs estruturados
+    • Não rastreia IPs
+    • Não registra ações
+    
+    Impacto:
+    • Impossível detectar ataques
+    • Sem rastreabilidade
+    • Não compliance com LGPD
+    
+    Severidade: MÉDIA 🟡
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔵 VULNERABILIDADES BAIXAS (Severidade: BAIXA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+13. ℹ️  DADOS NÃO PERSISTENTES
+    
+    Problema:
+    • Tudo em memória RAM
+    • Reinício = perda de dados
+    
+    Solução:
+    • Implementar banco de dados
+    • SQLite, PostgreSQL
+
+
+14. ℹ️  AUSÊNCIA DE RECUPERAÇÃO DE SENHA
+    
+    Problema:
+    • Senha esquecida = sem recuperação
+    
+    Solução:
+    • Email de recuperação
+    • Perguntas de segurança
+
+
+15. ℹ️  SEM PROTEÇÃO CONTRA ENUMERAÇÃO DE USUÁRIOS
+    
+    Problema:
+    • Mensagens diferentes para "usuário não existe" vs "senha errada"
+    
+    Solução:
+    • Mensagem genérica: "Credenciais inválidas"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 RESUMO EXECUTIVO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total de vulnerabilidades encontradas: 15
+
+Por severidade:
+🔴 CRÍTICAS:  5  (33%)
+🟠 ALTAS:     4  (27%)
+🟡 MÉDIAS:    4  (27%)
+🔵 BAIXAS:    2  (13%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 PRIORIDADES DE CORREÇÃO IMEDIATA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. REMOVER logs de debug com hashes/salts
+2. Implementar rate limiting
+3. Adicionar comparação constant-time
+4. Implementar HTTPS/TLS
+5. Validar tamanho de senha (buffer overflow)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  RECOMENDAÇÕES GERAIS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Este sistema NÃO DEVE ser usado em produção sem correções
+2. Implementar testes de penetração
+3. Realizar auditoria de código completa
+4. Adicionar monitoramento de segurança
+5. Seguir OWASP Top 10
+6. Compliance com LGPD/GDPR
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 CHECKLIST DE SEGURANÇA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Remover logs de debug
+[ ] Implementar rate limiting
+[ ] Usar comparação constant-time
+[ ] Adicionar HTTPS/TLS
+[ ] Validar tamanho de entrada
+[ ] Limpar sessões expiradas
+[ ] Validar senha forte
+[ ] Implementar 2FA
+[ ] Restringir CORS
+[ ] Adicionar logging de auditoria
+[ ] Persistir dados em DB
+[ ] Recuperação de senha
+[ ] Proteção contra enumeração
+[ ] mlock() para memória sensível
+[ ] Zeroizar senhas após uso
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Relatório gerado por: GitHub Copilot Security Analysis
+Data: 9 de fevereiro de 2026
+Versão: 1.0
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

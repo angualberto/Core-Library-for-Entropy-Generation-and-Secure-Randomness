@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Sistema de Autenticação Segura</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .panel {
+            display: none;
+        }
+        
+        .panel.active {
+            display: block;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .user-info h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .info-value {
+            color: #333;
+            font-family: monospace;
+        }
+        
+        .token-display {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 10px;
+            border-left: 4px solid #667eea;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Autenticação Segura</h1>
+        <p class="subtitle">Protocolo de comunicação com criptografia AGLE</p>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('login')">🔑 Login</div>
+            <div class="tab" onclick="showTab('register')">📝 Registrar</div>
+            <div class="tab" onclick="showTab('dashboard')">📊 Painel</div>
+        </div>
+        
+        <!-- PAINEL DE LOGIN -->
+        <div id="loginPanel" class="panel active">
+            <div class="form-group">
+                <label>👤 Usuário</label>
+                <input type="text" id="loginUsername" placeholder="Digite seu usuário">
+            </div>
+            <div class="form-group">
+                <label>🔒 Senha</label>
+                <input type="password" id="loginPassword" placeholder="Digite sua senha">
+            </div>
+            <button class="btn btn-primary" onclick="fazerLogin()">🚀 Entrar</button>
+        </div>
+        
+        <!-- PAINEL DE REGISTRO -->
+        <div id="registerPanel" class="panel">
+            <div class="form-group">
+                <label>👤 Usuário</label>
+                <input type="text" id="registerUsername" placeholder="Escolha um usuário">
+            </div>
+            <div class="form-group">
+                <label>🔒 Senha (mínimo 8 caracteres)</label>
+                <input type="password" id="registerPassword" placeholder="Escolha uma senha forte">
+            </div>
+            <button class="btn btn-primary" onclick="registrarUsuario()">✅ Criar Conta</button>
+        </div>
+        
+        <!-- PAINEL DO DASHBOARD -->
+        <div id="dashboardPanel" class="panel">
+            <div class="user-info">
+                <h3>👤 Informações da Sessão</h3>
+                <div class="info-row">
+                    <span class="info-label">Usuário:</span>
+                    <span class="info-value" id="dashUsername">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" style="color: #48bb78;">✅ Autenticado</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Expira em:</span>
+                    <span class="info-value" id="dashExpires">-</span>
+                </div>
+                <div class="token-display" id="tokenDisplay">Token carregando...</div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="validarToken()">🔄 Validar Token</button>
+            <button class="btn btn-danger" onclick="fazerLogout()">🚪 Sair</button>
+            
+            <div class="stats" id="statsContainer">
+                <!-- Estatísticas serão inseridas aqui -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let currentToken = null;
+        let currentUsername = null;
+        
+        // ═══════════════════════════════════════════════════════════
+        //                    FUNÇÕES DE NAVEGAÇÃO
+        // ═══════════════════════════════════════════════════════════
+        
+        function showTab(tabName) {
+            // Atualizar tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Atualizar painéis
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Panel').classList.add('active');
+            
+            // Carregar stats se for dashboard
+            if (tabName === 'dashboard' && currentToken) {
+                carregarEstatisticas();
+            }
+        }
+        
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        //                    FUNÇÕES DE API
+        // ═══════════════════════════════════════════════════════════
+        
+        async function registrarUsuario() {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            if (!username || password.length < 8) {
+                showMessage('❌ Usuário e senha (min 8 caracteres) são obrigatórios!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ Conta criada com sucesso! Faça login.', 'success');
+                    showTab('login');
+                    // Limpar abas para clicar
+                    document.querySelectorAll('.tab').forEach((tab, idx) => {
+                        if (idx === 0) tab.classList.add('active');
+                        else tab.classList.remove('active');
+                    });
+                } else {
+                    showMessage('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Erro de conexão com o servidor!', 'error');
+            }
+        }
+        
+        async function fazerLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showMessage('❌ Preencha todos os campos!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentToken = data.token;
+                    currentUsername = data.username;
+                    
+                    showMessage('✅ Login realizado com sucesso!', 'success');
+                    
+                    // Atualizar dashboard
+                    document.getElementById('dashUsername').textContent = currentUsername;
+                    document.getElementById('tokenDisplay').textContent = currentToken;
+                    
+                    // Ir para dashboard
+                    showTab('dashboard');
+                    document.querySelectorAll('.tab').forEach((tab, idx) => {
+                        if (idx === 2) tab.classList.add('active');
+                        else tab.classList.remove('active');
+                    });
+                    
+                    carregarEstatisticas();
+                } else {
+                    showMessage('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Erro de conexão com o servidor!', 'error');
+            }
+        }
+        
+        async function validarToken() {
+            if (!currentToken) {
+                showMessage('❌ Nenhum token disponível!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/validate`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const minutos = Math.floor(data.expires_in / 60);
+                    document.getElementById('dashExpires').textContent = `${minutos} minutos`;
+                    showMessage(`✅ Token válido! Expira em ${minutos} minutos.`, 'success');
+                } else {
+                    showMessage('❌ Token inválido ou expirado!', 'error');
+                    currentToken = null;
+                }
+            } catch (error) {
+                showMessage('❌ Erro ao validar token!', 'error');
+            }
+        }
+        
+        async function fazerLogout() {
+            if (!currentToken) return;
+            
+            try {
+                await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: currentToken})
+                });
+                
+                currentToken = null;
+                currentUsername = null;
+                
+                showMessage('✅ Logout realizado!', 'success');
+                showTab('login');
+                document.querySelectorAll('.tab').forEach((tab, idx) => {
+                    if (idx === 0) tab.classList.add('active');
+                    else tab.classList.remove('active');
+                });
+            } catch (error) {
+                showMessage('❌ Erro ao fazer logout!', 'error');
+            }
+        }
+        
+        async function carregarEstatisticas() {
+            try {
+                const response = await fetch(`${API_URL}/stats`);
+                const data = await response.json();
+                
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${data.users}</div>
+                        <div class="stat-label">Usuários</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.sessions}</div>
+                        <div class="stat-label">Sessões</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.active_sessions}</div>
+                        <div class="stat-label">Ativas</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        //                    INICIALIZAÇÃO
+        // ═══════════════════════════════════════════════════════════
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar conexão com servidor
+            fetch(`${API_URL}/stats`)
+                .then(() => {
+                    console.log('✅ Servidor conectado!');
+                })
+                .catch(() => {
+                    showMessage('⚠️ Servidor offline. Inicie com: ./servidor_auth', 'error');
+                });
+        });
+    </script>
+</body>
+</html>

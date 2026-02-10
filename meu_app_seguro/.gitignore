@@ -1,0 +1,24 @@
+# Binários
+*.o
+*.a
+*.so
+*.dll
+*.exe
+meu_app
+
+# Debug
+.gdb_history
+*.dSYM/
+*.su
+*.gch
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

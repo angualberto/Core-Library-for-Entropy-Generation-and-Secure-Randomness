@@ -1,0 +1,92 @@
+🚀 COMECE AQUI - 5 MINUTOS
+
+═══════════════════════════════════════════════════════════════════════════
+
+✨ Você tem 3 opções:
+
+OPÇÃO 1️⃣  - PÁGINA WEB (1 minuto)
+─────────────────────────────────────────────────────────────────────────
+firefox senha_segura.html
+
+Pronto! Abre uma página bonita para gerar senhas.
+Não envia nada para internet. 100% local.
+
+├─ ✨ Gera senhas aleatórias
+├─ 👁️ Mascaradas (clica para ver)
+├─ 📋 Copia com 1 clique
+└─ 🔒 Hash para banco de dados
+
+
+OPÇÃO 2️⃣  - COMPILAR PROGRAMA C (5 minutos)
+─────────────────────────────────────────────────────────────────────────
+gcc -O3 -o password_validator \
+  password_validator.c agle.c -lssl -lcrypto -std=c99
+
+./password_validator
+
+Menu aparece. Escolhas:
+1 = Registrar novo usuário
+2 = Fazer login
+3 = Ver usuários
+4 = Sair
+
+Teste:
+  username: alice
+  password: MinhaSenh@123
+
+
+OPÇÃO 3️⃣  - TESTE AUTOMATIZADO (2 minutos)
+─────────────────────────────────────────────────────────────────────────
+bash test_validator.sh
+
+Roda tudo sozinho!
+- Registra usuário alice
+- Tenta login errado 3x
+- Bloqueia conta
+- Mostra status
+
+═══════════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTAÇÃO:
+
+quer entender tudo?      → COMO_USAR_HTML_E_C.md
+quer referência rápida?  → CHEAT_SHEET.md
+quer ver as funções?     → FUNCOES.md
+quer navegar?            → MAPA.md
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 RESUMO DO QUE TEM:
+
+✅ Gerador de senhas (HTML) - visual e bonito
+✅ Validador de senhas (C) - seguro com AGLE
+✅ Proteção contra força bruta - máx 3 tentativas
+✅ Mascaramento de senhas - nunca expostas
+✅ Hash SHAKE256 - criptografia moderna
+✅ KDF com 100k iterações - proteção contra GPU
+✅ Testes automatizados - verifica tudo
+
+═══════════════════════════════════════════════════════════════════════════
+
+❌ ERROS COMUNS:
+
+"gcc: command not found"
+→ Instalar GCC: sudo apt-get install build-essential
+
+"openssl/evp.h: No such file"
+→ Instalar OpenSSL: sudo apt-get install libssl-dev
+
+"password_validator: command not found"
+→ Compilar primeiro: gcc -O3 -o password_validator ...
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎉 ESCOLHA UMA E COMECE AGORA!
+
+firefox senha_segura.html
+    OU
+bash test_validator.sh
+    OU
+gcc -O3 -o password_validator password_validator.c agle.c -lssl -lcrypto && ./password_validator
+
+═══════════════════════════════════════════════════════════════════════════

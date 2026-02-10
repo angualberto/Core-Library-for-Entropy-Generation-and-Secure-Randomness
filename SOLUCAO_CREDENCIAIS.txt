@@ -1,0 +1,126 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║        🔧 SOLUÇÃO: "Credenciais inválidas"                      ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+O erro "❌ Credenciais inválidas" acontece porque:
+
+❌ PROBLEMA: Você tentou fazer login SEM criar uma conta primeiro!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SOLUÇÃO RÁPIDA (3 PASSOS):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PASSO 1 - INICIAR O SERVIDOR:
+   Terminal 1:
+   ./servidor_auth
+   
+   (Deixe esse terminal aberto rodando o servidor!)
+
+PASSO 2 - CRIAR USUÁRIO DE TESTE:
+   Terminal 2:
+   ./criar_usuario_teste.sh
+   
+   Isso criará automaticamente:
+   • Usuário: admin
+   • Senha: admin123
+
+PASSO 3 - FAZER LOGIN:
+   No navegador (cliente_auth.html):
+   1. Clique na aba "📝 Registrar" OU use as credenciais criadas
+   2. Se já criou com o script, vá na aba "🔑 Login"
+   3. Digite: admin / admin123
+   4. Clique em "🚀 Entrar"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 OPÇÃO ALTERNATIVA (CRIAR CONTA PELO NAVEGADOR):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Certifique-se que o servidor está rodando:
+   ./servidor_auth
+
+2. Abra o navegador:
+   firefox cliente_auth.html
+
+3. Na interface web:
+   a) Clique na aba "📝 Registrar"
+   b) Digite um usuário (ex: seu_nome)
+   c) Digite uma senha de 8+ caracteres
+   d) Clique em "✅ Criar Conta"
+   e) Vá na aba "🔑 Login"
+   f) Use as credenciais que você acabou de criar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 VERIFICAR SE SERVIDOR ESTÁ RODANDO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Teste se o servidor está ativo:
+   curl http://localhost:8080/stats
+
+Se retornar JSON com estatísticas → ✅ Servidor OK
+Se der erro de conexão → ❌ Servidor não está rodando
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 RESUMO DO FLUXO CORRETO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  PRIMEIRO: Registrar usuário
+   └─► Aba "Registrar" OU ./criar_usuario_teste.sh
+
+2️⃣  DEPOIS: Fazer login
+   └─► Aba "Login" com as credenciais criadas
+
+3️⃣  USAR: Ver painel com token
+   └─► Aba "Painel" mostra seu token de autenticação
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  ERROS COMUNS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ "Credenciais inválidas"
+   → Você ainda não criou essa conta! Registre primeiro.
+
+❌ "Erro de conexão"
+   → O servidor não está rodando. Execute: ./servidor_auth
+
+❌ "Senha muito curta"
+   → A senha precisa ter pelo menos 8 caracteres.
+
+❌ "Usuário já existe"
+   → Esse nome de usuário já foi registrado. Use outro ou
+      faça login com esse usuário.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 COMANDO RÁPIDO (TUDO EM 1):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Execute este comando em um terminal:
+   ./iniciar_auth.sh
+
+Isso vai:
+✅ Compilar (se necessário)
+✅ Iniciar o servidor
+✅ Abrir o navegador automaticamente
+
+Depois é só criar sua conta na aba "Registrar"!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 DICA PRO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use o script de teste para criar usuário automaticamente:
+   ./criar_usuario_teste.sh
+
+Credenciais criadas: admin / admin123
+
+Agora é só fazer login! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

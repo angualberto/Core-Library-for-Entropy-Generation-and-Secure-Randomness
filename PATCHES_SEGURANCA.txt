@@ -1,0 +1,328 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 PATCH DE CORREÇÃO DE SEGURANÇA - SERVIDOR DE AUTENTICAÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 1: COMPARAÇÃO CONSTANT-TIME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Adicione esta função APÓS as includes, ANTES das estruturas:
+
+```c
+// Comparação constant-time para prevenir timing attacks
+bool constant_time_compare(const uint8_t *a, const uint8_t *b, size_t len) {
+    volatile uint8_t result = 0;
+    for (size_t i = 0; i < len; i++) {
+        result |= a[i] ^ b[i];
+    }
+    return result == 0;
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 2: ESTRUTURAS COM RATE LIMITING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUBSTITUA a estrutura User por:
+
+```c
+typedef struct {
+    char username[64];
+    uint8_t salt[16];
+    uint8_t password_hash[32];
+    bool active;
+    int failed_attempts;      // NOVO
+    time_t locked_until;      // NOVO
+} User;
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 3: REGISTRAR USUÁRIO (SEM LOGS DE SALT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUBSTITUA a função registrar_usuario() por:
+
+```c
+bool registrar_usuario(const char *username, const char *password) {
+    if (user_count >= MAX_USERS) return false;
+    if (encontrar_usuario(username) != NULL) return false;
+    
+    // VALIDAÇÃO DE SENHA FORTE
+    size_t pass_len = strlen(password);
+    if (pass_len < 12) {
+        printf("❌ Senha muito curta (mínimo 12 caracteres)\n");
+        return false;
+    }
+    if (pass_len > 240) {
+        printf("❌ Senha muito longa (máximo 240 caracteres)\n");
+        return false;
+    }
+    
+    // Verificar complexidade
+    bool tem_maiuscula = false, tem_minuscula = false;
+    bool tem_numero = false, tem_simbolo = false;
+    for (size_t i = 0; i < pass_len; i++) {
+        if (isupper(password[i])) tem_maiuscula = true;
+        if (islower(password[i])) tem_minuscula = true;
+        if (isdigit(password[i])) tem_numero = true;
+        if (!isalnum(password[i])) tem_simbolo = true;
+    }
+    if (!(tem_maiuscula && tem_minuscula && tem_numero && tem_simbolo)) {
+        printf("❌ Senha deve ter: maiúscula, minúscula, número e símbolo\n");
+        return false;
+    }
+    
+    User *user = &users[user_count];
+    strncpy(user->username, username, sizeof(user->username) - 1);
+    user->active = true;
+    user->failed_attempts = 0;      // Inicializar
+    user->locked_until = 0;         // Inicializar
+    
+    AGLE_Context ctx;
+    AGLE_Init(&ctx);
+    AGLE_GetRandomBytes(&ctx, user->salt, 16);
+    
+    uint8_t combined[256];
+    memcpy(combined, password, pass_len);
+    memcpy(combined + pass_len, user->salt, 16);
+    AGLE_HashSHAKE256(combined, pass_len + 16, user->password_hash, 32);
+    
+    // ZEROIZAR SENHA DA MEMÓRIA
+    memset(combined, 0, sizeof(combined));
+    
+    user_count++;
+    
+    // LOG SEGURO (SEM SALT)
+    printf("✅ Usuário registrado: %s\n", username);
+    
+    return true;
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 4: VALIDAR SENHA (SEM LOGS DE HASH + CONSTANT-TIME + RATE LIMIT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUBSTITUA a função validar_senha() por:
+
+```c
+bool validar_senha(User *user, const char *password) {
+    // VERIFICAR BLOQUEIO POR RATE LIMITING
+    time_t now = time(NULL);
+    if (now < user->locked_until) {
+        int tempo_restante = (int)(user->locked_until - now);
+        printf("🔒 Conta bloqueada: %s (aguarde %d segundos)\n", 
+               user->username, tempo_restante);
+        return false;
+    }
+    
+    size_t pass_len = strlen(password);
+    uint8_t combined[256];
+    uint8_t hash[32];
+    
+    memcpy(combined, password, pass_len);
+    memcpy(combined + pass_len, user->salt, 16);
+    AGLE_HashSHAKE256(combined, pass_len + 16, hash, 32);
+    
+    // ZEROIZAR SENHA DA MEMÓRIA
+    memset(combined, 0, sizeof(combined));
+    
+    // USAR COMPARAÇÃO CONSTANT-TIME
+    bool resultado = constant_time_compare(hash, user->password_hash, 32);
+    
+    if (resultado) {
+        // SUCESSO: Resetar contadores
+        user->failed_attempts = 0;
+        user->locked_until = 0;
+        printf("✅ Login bem-sucedido: %s\n", user->username);
+    } else {
+        // FALHA: Incrementar tentativas
+        user->failed_attempts++;
+        printf("❌ Falha de login: %s (tentativa %d)\n", 
+               user->username, user->failed_attempts);
+        
+        // RATE LIMITING EXPONENCIAL
+        if (user->failed_attempts >= 5) {
+            user->locked_until = now + 900;  // 15 minutos
+            printf("🔒 Conta bloqueada por 15 minutos após 5 tentativas\n");
+        } else if (user->failed_attempts >= 3) {
+            user->locked_until = now + 300;  // 5 minutos
+            printf("🔒 Conta bloqueada por 5 minutos após 3 tentativas\n");
+        }
+    }
+    
+    return resultado;
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 5: VALIDAR TOKEN (CONSTANT-TIME)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUBSTITUA a função validar_token() por:
+
+```c
+Session* validar_token(const char *token) {
+    time_t now = time(NULL);
+    
+    for (int i = 0; i < session_count; i++) {
+        // USAR COMPARAÇÃO CONSTANT-TIME PARA TOKENS
+        if (sessions[i].valid && 
+            constant_time_compare((uint8_t*)sessions[i].token, 
+                                 (uint8_t*)token, 
+                                 strlen(sessions[i].token))) {
+            
+            if (sessions[i].expires_at > now) {
+                return &sessions[i];
+            } else {
+                // Sessão expirada
+                sessions[i].valid = false;
+                printf("⏰ Sessão expirada: %s\n", sessions[i].username);
+                return NULL;
+            }
+        }
+    }
+    return NULL;
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 6: LIMPEZA DE SESSÕES EXPIRADAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADICIONE esta nova função ANTES de criar_sessao():
+
+```c
+void limpar_sessoes_expiradas() {
+    time_t now = time(NULL);
+    int removidas = 0;
+    
+    for (int i = 0; i < session_count; i++) {
+        if (sessions[i].expires_at < now || !sessions[i].valid) {
+            // Zeroizar dados da sessão
+            memset(&sessions[i], 0, sizeof(Session));
+            
+            // Mover última sessão para esta posição
+            if (i < session_count - 1) {
+                sessions[i] = sessions[session_count - 1];
+                i--;  // Reprocessar esta posição
+            }
+            session_count--;
+            removidas++;
+        }
+    }
+    
+    if (removidas > 0) {
+        printf("🧹 %d sessões expiradas limpas\n", removidas);
+    }
+}
+```
+
+MODIFIQUE criar_sessao() para chamar a limpeza:
+
+```c
+char* criar_sessao(const char *username) {
+    // LIMPAR SESSÕES EXPIRADAS ANTES DE CRIAR NOVA
+    limpar_sessoes_expiradas();
+    
+    if (session_count >= MAX_SESSIONS) return NULL;
+    
+    Session *sess = &sessions[session_count];
+    strncpy(sess->username, username, sizeof(sess->username) - 1);
+    sess->valid = true;
+    sess->created_at = time(NULL);
+    sess->expires_at = sess->created_at + 3600;  // 1 hora
+    
+    AGLE_Context ctx;
+    AGLE_Init(&ctx);
+    AGLE_GenerateSessionTokenHex(&ctx, sess->token, 32);
+    
+    session_count++;
+    
+    printf("✅ Sessão criada para: %s (expira em 1h)\n", username);
+    
+    return sess->token;
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 7: CORS RESTRITIVO (OPCIONAL - MAIS SEGURO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Na função enviar_resposta(), SUBSTITUA:
+
+```c
+"Access-Control-Allow-Origin: *\r\n"
+```
+
+Por (se servir na mesma máquina):
+
+```c
+"Access-Control-Allow-Origin: http://localhost:8080\r\n"
+```
+
+Ou (se cliente estiver em arquivo local):
+
+```c
+"Access-Control-Allow-Origin: null\r\n"
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATCH 8: ADICIONAR INCLUDE PARA ctype.h (NECESSÁRIO PARA VALIDAÇÃO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADICIONE no início do arquivo, com os outros includes:
+
+```c
+#include <ctype.h>  // Para isupper(), islower(), isdigit(), isalnum()
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 RESUMO DAS CORREÇÕES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ PATCH 1: Comparação constant-time (timing attack)
+✅ PATCH 2: Estrutura com rate limiting
+✅ PATCH 3: Registro sem exposição de salt + validação senha forte
+✅ PATCH 4: Validação com rate limiting + constant-time
+✅ PATCH 5: Token constant-time
+✅ PATCH 6: Limpeza de sessões expiradas
+✅ PATCH 7: CORS restritivo
+✅ PATCH 8: Include necessário
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANTE APÓS APLICAR OS PATCHES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. RECOMPILAR: gcc -o servidor_auth servidor_auth.c -lm -Wall -Wextra
+2. TESTAR todas as funcionalidades
+3. Senhas antigas NÃO funcionarão (estrutura mudou)
+4. Registrar novos usuários com senhas fortes:
+   - Mínimo 12 caracteres
+   - Pelo menos: 1 MAIÚSCULA, 1 minúscula, 1 número, 1 !@#$%
+   - Exemplo: MyP@ssw0rd2025!
+
+5. Testar bloqueio:
+   - 3 tentativas erradas = 5 minutos de bloqueio
+   - 5 tentativas erradas = 15 minutos de bloqueio
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 VULNERABILIDADES RESTANTES (NECESSITAM MAIS TRABALHO):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ HTTPS/TLS (não corrigido - necessita openSSL)
+❌ 2FA (não implementado - necessita TOTP)
+❌ Persistência em DB (não implementado - necessita SQLite)
+❌ Logging de auditoria (não implementado)
+❌ mlock() para proteção de memória (não implementado)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

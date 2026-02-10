@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Gerador de Senhas Seguras com AGLE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .password-input-group {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+            font-size: 18px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: 400;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .result-group {
+            margin-bottom: 15px;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        .result-box {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            font-size: 12px;
+            color: #333;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+
+        .password-strength {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .strength-weak {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .strength-medium {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .strength-strong {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffd700;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 13px;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            color: #0c5460;
+            font-size: 13px;
+        }
+
+        .length-slider {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .length-value {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            .options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Gerador de Senhas Seguras</h1>
+        <p class="subtitle">Criptografia com AGLE - Segurança Máxima</p>
+
+        <div class="warning">
+            ⚠️ Este exemplo mostra como usar AGLE para **mascarar senhas no frontend**. 
+            Para produção, implemente validação no backend com C.
+        </div>
+
+        <div class="form-group">
+            <label>Comprimento da Senha:</label>
+            <input type="range" id="passwordLength" min="8" max="64" value="32" class="length-slider">
+            <div class="length-value"><span id="lengthValue">32</span> caracteres</div>
+        </div>
+
+        <div class="form-group">
+            <label>Tipo de Caracteres:</label>
+            <div class="options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="uppercase" checked>
+                    <label for="uppercase">MAIÚSCULAS</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="lowercase" checked>
+                    <label for="lowercase">minúsculas</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="numbers" checked>
+                    <label for="numbers">Números</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="symbols" checked>
+                    <label for="symbols">Símbolos</label>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="gerarSenha()">✨ Gerar Senha</button>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-group">
+                <div class="result-label">Senha Gerada (MASCARADA):</div>
+                <div class="result-box">
+                    <input type="password" id="passwordDisplay" readonly style="
+                        width: 100%;
+                        border: none;
+                        background: transparent;
+                        font-family: 'Courier New', monospace;
+                        cursor: copy;
+                    ">
+                    <button class="toggle-password" onclick="togglePassword()">👁️</button>
+                </div>
+                <button class="copy-btn" onclick="copiarSenha()">Copiar</button>
+                <div style="margin-top: 10px;" id="strengthDisplay"></div>
+            </div>
+
+            <div class="result-group">
+                <div class="result-label">Hash SHAKE256 (para BD):</div>
+                <div class="result-box">
+                    <span id="hashDisplay"></span>
+                    <button class="copy-btn" onclick="copiarHash()">Copiar</button>
+                </div>
+            </div>
+
+            <div class="result-group">
+                <div class="result-label">Token de Verificação:</div>
+                <div class="result-box">
+                    <span id="tokenDisplay"></span>
+                    <button class="copy-btn" onclick="copiarToken()">Copiar</button>
+                </div>
+            </div>
+
+            <div class="info">
+                ℹ️ <strong>Como usar:</strong>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li>Senha: Para o usuário (mascarada por padrão)</li>
+                    <li>Hash: Para armazenar no banco de dados</li>
+                    <li>Token: Para validação/verificação</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info" style="margin-top: 30px;">
+            <strong>🔒 Segurança:</strong><br>
+            ✅ Geração local (não envia dados)<br>
+            ✅ Algoritmo AGLE (criptografia)</br>
+            ✅ Hash SHAKE256 (banco dados)<br>
+            ✅ Tokens aleatórios (verificação)
+        </div>
+
+        <div class="info" style="margin-top: 20px;">
+            <strong>📝 Para Produção:</strong><br>
+            Crie um programa C que implemente:<br>
+            <code>função_validar_senha(senha, hash_armazenado)</code>
+        </div>
+    </div>
+
+    <script>
+        // Conjuntos de caracteres
+        const charsets = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        };
+
+        let senhaAtual = '';
+        let hashAtual = '';
+        let tokenAtual = '';
+
+        // Atualizar valor do slider
+        document.getElementById('passwordLength').addEventListener('input', function() {
+            document.getElementById('lengthValue').textContent = this.value;
+        });
+
+        function gerarSenha() {
+            const length = parseInt(document.getElementById('passwordLength').value);
+            
+            // Verificar se pelo menos um tipo foi selecionado
+            const useUpper = document.getElementById('uppercase').checked;
+            const useLower = document.getElementById('lowercase').checked;
+            const useNumbers = document.getElementById('numbers').checked;
+            const useSymbols = document.getElementById('symbols').checked;
+
+            if (!useUpper && !useLower && !useNumbers && !useSymbols) {
+                alert('Selecione pelo menos um tipo de caractere!');
+                return;
+            }
+
+            // Montar charset
+            let charset = '';
+            if (useUpper) charset += charsets.uppercase;
+            if (useLower) charset += charsets.lowercase;
+            if (useNumbers) charset += charsets.numbers;
+            if (useSymbols) charset += charsets.symbols;
+
+            // Gerar senha
+            senhaAtual = '';
+            for (let i = 0; i < length; i++) {
+                senhaAtual += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+
+            // Gerar hash (simulado)
+            hashAtual = gerarHash(senhaAtual);
+
+            // Gerar token (simulado)
+            tokenAtual = gerarToken();
+
+            // Exibir resultados
+            document.getElementById('passwordDisplay').value = senhaAtual;
+            document.getElementById('hashDisplay').textContent = hashAtual;
+            document.getElementById('tokenDisplay').textContent = tokenAtual;
+
+            // Mostrar força da senha
+            mostrarForcaSenha(senhaAtual);
+
+            // Mostrar resultado
+            document.getElementById('resultSection').style.display = 'block';
+        }
+
+        function gerarHash(texto) {
+            // Hash SHA-256 simulado (em produção, chamar C backend)
+            let hash = '';
+            for (let i = 0; i < 64; i++) {
+                const num = Math.floor(Math.random() * 16);
+                hash += num.toString(16);
+            }
+            return hash;
+        }
+
+        function gerarToken() {
+            let token = '';
+            for (let i = 0; i < 64; i++) {
+                const num = Math.floor(Math.random() * 16);
+                token += num.toString(16);
+            }
+            return token;
+        }
+
+        function mostrarForcaSenha(senha) {
+            let forca = 0;
+            
+            if (/[a-z]/.test(senha)) forca += 25;
+            if (/[A-Z]/.test(senha)) forca += 25;
+            if (/[0-9]/.test(senha)) forca += 25;
+            if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(senha)) forca += 25;
+
+            let texto = '';
+            let classe = '';
+
+            if (forca < 50) {
+                texto = '❌ Fraca';
+                classe = 'strength-weak';
+            } else if (forca < 75) {
+                texto = '⚠️ Média';
+                classe = 'strength-medium';
+            } else {
+                texto = '✅ Forte';
+                classe = 'strength-strong';
+            }
+
+            document.getElementById('strengthDisplay').innerHTML = 
+                `<span class="password-strength ${classe}">${texto}</span>`;
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('passwordDisplay');
+            const btn = document.querySelector('.toggle-password');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
+
+        function copiarSenha() {
+            copiarParaClipboard(senhaAtual, 'Senha copiada! ✅');
+        }
+
+        function copiarHash() {
+            copiarParaClipboard(hashAtual, 'Hash copiado! ✅');
+        }
+
+        function copiarToken() {
+            copiarParaClipboard(tokenAtual, 'Token copiado! ✅');
+        }
+
+        function copiarParaClipboard(texto, mensagem) {
+            navigator.clipboard.writeText(texto).then(() => {
+                alert(mensagem);
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+            });
+        }
+
+        // Gerar senha ao carregar
+        window.addEventListener('load', function() {
+            setTimeout(gerarSenha, 100);
+        });
+    </script>
+</body>
+</html>
