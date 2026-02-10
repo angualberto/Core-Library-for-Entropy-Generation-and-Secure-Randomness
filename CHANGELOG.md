@@ -22,7 +22,7 @@
   - Cleaned up QUICK_START.md and README.md
 
 - License update:
-  - Changed from RPL-1.0 to Apache-2.0
+  - Changed from RPL-1.0 to ASL-1.0 (study-only)
   - Added explicit liability clause for commercial misuse
 
 - Code quality:

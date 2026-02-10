@@ -89,8 +89,8 @@ pkg-config --cflags --libs agle
 
 ## Licenca
 
-Este projeto e licenciado sob Apache-2.0. Consulte [LICENSE](LICENSE) para
-detalhes.
+Este projeto e licenciado sob ASL-1.0 (study-only). Nao e uma licenca
+open-source. Consulte [LICENSE](LICENSE) para detalhes.
 
 ## Citacao
 
