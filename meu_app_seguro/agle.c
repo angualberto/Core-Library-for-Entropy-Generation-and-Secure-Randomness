@@ -359,7 +359,7 @@ const char* AGLE_GetVersion(void) {
 }
 
 const char* AGLE_GetInfo(void) {
-        return "AGLE v" AGLE_VERSION " - Alpha-Gauss-Logistic Entropy Generator\n"
-            "Features: RNG, Password Generation, SHAKE256 Hashing, KDF, Session Tokens\n"
-            "License: Apache-2.0";
+    return "AGLE v" AGLE_VERSION " - Alpha-Gauss-Logistic Entropy Generator\n"
+           "Features: RNG, Password Generation, SHAKE256 Hashing, KDF, Session Tokens\n"
+           "License: RPL-1.0";
 }

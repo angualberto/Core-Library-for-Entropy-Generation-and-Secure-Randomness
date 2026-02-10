@@ -6,7 +6,7 @@
  * key derivation, and session tokens. The implementation relies on OpenSSL
  * for SHAKE256 and system entropy sources for seeding.
  *
- * License: Apache-2.0
+ * License: ASL-1.0 (study-only)
  */
 
 #ifndef AGLE_H
